@@ -5,8 +5,6 @@ import matplotlib
 import matplotlib.pyplot as plt
 from matplotlib import rc
 import numpy as np
-from scipy.integrate import quad
-import csv
 from matplotlib.ticker import AutoMinorLocator
 import e_xsections
 
@@ -32,10 +30,11 @@ thickls = [int(2000), int(3000)]  # sample specific
 stepls = [5, 5]
 
 # matrix compound information
-matrix_den = 0.92  # sample specific
-elements = [1, 8]  # sample specific
-stoic = [2, 1]  # sample specific
-ineleloss = 39.3  # sample specific
+matrix = "H48.6C32.9N8.9O8.9S0.6"
+matrix_den = 1.35
+elements = np.array([1, 6, 7, 8, 16])
+stoic = [48.6, 32.9, 8.9, 8.9, 0.6]
+ineleloss = 37.5  # sample specific
 mw = 0.
 j = 0
 for i in elements:
@@ -43,17 +42,17 @@ for i in elements:
     j += 1
 
 # prepare plots
-fig_index = 1
-fig_lab = ['(a)', '(b)']
-fig = plt.figure(figsize=(12, 5))
 matplotlib.rcParams['pdf.fonttype'] = 'truetype'
 fontProperties = {'family': 'serif', 'serif': ['Times New Roman'], 'weight': 'normal', 'size': 12}
 plt.rc('font', **fontProperties)
+fig_index = 1
+fig_lab = ['(a)', '(b)']
+fig = plt.figure(figsize=(12, 5))
 
 # f = open('unimatrix_data.csv','wb')
 
 for energy in energyls:
-    # eta is the out-scattered fraction
+    # eta is the out-scattered fraction (Langmore, 1992)
     eta = 1 - 4.12 / 10
 
     # establish table of thickness in nm (must be integer)
@@ -65,25 +64,23 @@ for energy in energyls:
     cs_el = e_xsections.cse_elastic(energy, elements, stoic)
     cs_inel = e_xsections.cse_inelastic(ineleloss, energy, elements, stoic)
 
-    # probability per thickness
+    # probability per thickness in nm-1
     # delta is the number density of molecules (cm-3)
     delta = matrix_den / mw * Nav
-    k_el = cs_el * delta
-    k_inel = cs_inel * delta
-    k_elin = cs_el * (1 - eta) * delta
-    k_inelin = cs_inel * (1 - eta) * delta
-    k_out = (cs_el * eta + cs_inel * eta) * delta
+    k_el = cs_el * delta * 1e-7
+    k_inel = cs_inel * delta * 1e-7
+    k_elin = cs_el * (1 - eta) * delta * 1e-7
+    k_out = cs_el * eta * delta * 1e-7
     k_tot = k_inel + k_el
 
     # intensity fractions relative to primary beam
     # t is converted to cm
-    i_noscat = [exp(-k_tot * t[i / step - 1] * (1e-7)) for i in t]
-    i_1el = [k_elin * t[i / step - 1] * (1e-7) * i_noscat[i / step - 1] for i in t]
+    i_noscat = [exp(-k_tot * t[i / step - 1]) for i in t]
+    i_1el = [k_elin * t[i / step - 1] * i_noscat[i / step - 1] for i in t]
     i_pc = [sqrt(i_noscat[i / step - 1] * i_1el[i / step - 1]) for i in t]
-    i_elpl = [exp(-(k_inelin + k_out) * t[i / step - 1] * (1e-7)) - i_noscat[i / step - 1] - i_1el[i / step - 1] for i
-              in t]
-    i_out = [1 - exp(-k_out * t[i / step - 1] * (1e-7)) for i in t]
-    i_inel = [exp(-k_out * t[i / step - 1] * (1e-7)) - exp(-(k_inelin + k_out) * t[i / step - 1] * (1e-7)) for i in t]
+    i_elpl = [exp(-(k_inel + k_out) * t[i / step - 1]) - i_noscat[i / step - 1] - i_1el[i / step - 1] for i in t]
+    i_out = [1 - exp(-k_out * t[i / step - 1]) for i in t]
+    i_inel = [exp(-k_out * t[i / step - 1]) - exp(-(k_inel + k_out) * t[i / step - 1]) for i in t]
 
     # output data to csv
     # writer = csv.writer(f)
@@ -98,6 +95,8 @@ for energy in energyls:
 
 
     # acquire slope arctan at specified point of a function curve
+
+
     def getatan(x, y, xdim, ydim, xsize, ysize, i0, leng):
         logy = [log10(i) for i in y]
         slope = (logy[i0 + leng] - logy[i0]) / (x[i0 + leng] - x[i0]) * xdim / ydim * ysize / xsize
@@ -123,7 +122,7 @@ for energy in energyls:
     ax.xaxis.set_minor_locator(minorLocator)
     label_pos = int(thickness / step / 3)
     npts = thickness / step
-    plt.title(fig_lab[fig_index - 1] + ' Ice at ' + str(energy) + ' keV')
+    plt.title(fig_lab[fig_index - 1] + ' Protein at ' + str(energy) + ' keV')
     xdim = thickness
     ydim = 3
     xsize = 677
@@ -199,12 +198,12 @@ for energy in energyls:
         plt.text(ofst.xcoord, ofst.ycoord, 'Scattered out', fontsize=9, color='orange', rotation=rot)
 
     plt.semilogy()
-    plt.ylim(10 ** (-ydim), 1.1)
+    plt.ylim(10 ** (-ydim), 1)
     plt.xlabel('Thickness (nm)')
     plt.ylabel('Fraction')
     fig_index = fig_index + 1
 
 fig.savefig('unimatrix_fig_e.pdf', format='pdf')
-
 plt.show()
+
 sys.exit()

@@ -1,5 +1,7 @@
 from math import sqrt,log
 
+# return cross sections in cm2
+
 electron_mass = 511.003414
 
 def cse_inelastic(eloss,energy,elements,stoic):
