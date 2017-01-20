@@ -6,12 +6,13 @@ import numpy as np
 from constants import *
 from util import *
 from results import *
+from itertools import izip
 import os
 
 
 class x_ray_beam(object):
 
-    def __init__(self, pixel, wd, n_ccd, matrix_compound, matrix_density):
+    def __init__(self, pixel, wd, n_ccd, matrix_compound, matrix_density, ineleloss=None):
         """
         Initialize object.
         :param pixel: Pixel size in um
@@ -27,6 +28,8 @@ class x_ray_beam(object):
         self.matrix = matrix_compound
         self.matrix_den = matrix_density
         self.matrix_elements, self.matrix_stoic, self.matrix_mw = parser(self.matrix)
+        if ineleloss is not None:
+            self.ineleloss = ineleloss
 
     def get_xray_categories(self, energy, thickness, step):
         """
@@ -83,7 +86,8 @@ class x_ray_beam(object):
         i_inel = np.exp(-(k_out + k_pi) * t) - np.exp(-(k_inelin + k_out + k_pi) * t)
         i_inelpc = i_inel * frac2
 
-        res = result_holder(energy, thickness, step, t, i_noscat, i_1el, i_1elpc, i_pc, i_elpl, i_elplpc, i_out, i_pi, i_inel, i_inelpc)
+        res = result_holder(energy, thickness, step, t, i_noscat=i_noscat, i_1el=i_1el, i_1elpc=None, i_pc=i_pc,
+                            i_elpl=i_elpl, i_elplpc=i_elplpc, i_out=i_out, i_pi=i_pi, i_inel=i_inel, i_inelpc=i_inelpc)
         self.results.append(res)
 
         return
@@ -112,32 +116,9 @@ class x_ray_beam(object):
             t = res.t
             label_pos = int(thickness / step / 3)
 
-            pl_pc, = ax.plot(t, res.i_pc, '--', label='Phase contrast image (PCI) signal', color='blue')
-            ax.text(t[label_pos], res.i_pc[label_pos], 'Phase contrast image (PCI) signal', fontsize=9, color='blue')
-
-            pl_elplpc, = ax.plot(t, res.i_elplpc, '--', label='Plural elastically scattered in PCI background', color='green')
-            ax.text(t[label_pos], res.i_elplpc[label_pos], 'Plural elastically scattered in PCI background', fontsize=9, color='green')
-
-            pl_inelpc, = ax.plot(t, res.i_inelpc, '--', label='Inelastically scattered in PCI background', color='red')
-            ax.text(t[label_pos], res.i_inelpc[label_pos], 'Inelastically scattered in PCI background', fontsize=9, color='red')
-
-            pl_noscat, = ax.plot(t, res.i_noscat, label='Unscattered', color='salmon')
-            ax.text(t[label_pos], res.i_noscat[label_pos], 'Unscattered', fontsize=9, color='salmon')
-
-            pl_1el, = ax.plot(t, res.i_1el, label='Single elastically scattered', color='black')
-            ax.text(t[label_pos], res.i_1el[label_pos], 'Single elastically scattered', fontsize=9, color='black')
-
-            pl_elpl, = ax.plot(t, res.i_elpl, label='Plural elastically scattered', color='darkcyan')
-            ax.text(t[label_pos], res.i_elpl[label_pos], 'Plural elastically scattered', fontsize=9, color='darkcyan')
-
-            pl_inel, = ax.plot(t, res.i_inel, label='Inelastically scattered', color='magenta')
-            ax.text(t[label_pos], res.i_inel[label_pos], 'Inelastically scattered', fontsize=9, color='magenta')
-
-            pl_out, = ax.plot(t, res.i_out, label='Scattered out', color='orange')
-            ax.text(t[label_pos], res.i_out[label_pos], 'Scattered out', fontsize=9, color='orange')
-
-            pl_pi, = ax.plot(t, res.i_pi, label='Absorbed', color='grey')
-            ax.text(t[label_pos], res.i_pi[label_pos], 'Absorbed', fontsize=9, color='grey')
+            for i in res.categories:
+                ax.plot(t, i.data, linestyle=i.style, label=i.label, color=i.color)
+                ax.text(t[label_pos], i.data[label_pos], i.label, fontsize=9, color=i.color)
 
             ax.set_yscale('log')
             ax.set_ylim(1e-18, 1.1)
@@ -151,3 +132,14 @@ class x_ray_beam(object):
         if show:
             plt.show()
 
+
+unimatrix_xray = x_ray_beam(pixel=1, wd=1e4, n_ccd=1024, matrix_compound='H48.6C32.9N8.9O8.9S0.6', matrix_density=1.35)
+
+energyls = [5, 10, 20, 40]
+thickls = [1, 10, 50, 100]
+stepls = [1e-3, 2e-3, 4e-3, 8e-3]
+
+for energy, thickness, step in izip(energyls, thickls, stepls):
+    unimatrix_xray.get_xray_categories(energy, thickness, step)
+
+unimatrix_xray.plot_all()
