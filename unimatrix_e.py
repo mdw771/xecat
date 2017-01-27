@@ -8,29 +8,44 @@
 #####################################
 
 import sys
-from math import *
 from xraylib import AtomicWeight
 import matplotlib
 import matplotlib.pyplot as plt
 from matplotlib import rc
 import numpy as np
 from matplotlib.ticker import AutoMinorLocator
-import e_xsections
 from constants import *
 from util import *
 from results import *
-from unimatrix_xray import x_ray_beam
+from measurement import *
+from output import *
+from sample import *
+from beam import *
 from itertools import izip
 import os
 
 
-class electron_beam(x_ray_beam):
+class ElectronSingleMatSimulator(object):
 
-    def get_xray_categories(self, energy, thickness, step):
+    def __init__(self, sample=None):
+        """
+        Initialize object.
+        """
+        self.results = []
+        if sample is not None:
+            self.sample = sample
 
-        raise AttributeError('Invalid mathod for electron beam class.')
+    def get_xray_categories(self, xray_beam, measurement, output, new_sample=None):
 
-    def get_e_categories(self, energy, thickness, step):
+        raise AttributeError('Invalid mathod for electron class.')
+
+    def get_e_categories(self, e_beam, measurement, output, new_sample=None):
+
+        assert isinstance(e_beam, ElectronBeam)
+        energy = e_beam.energy
+
+        if new_sample is not None:
+            self.sample = new_sample
 
         print("-----------------------------------------------")
         print("Energy: %.2f keV" % energy)
@@ -39,15 +54,12 @@ class electron_beam(x_ray_beam):
 
         eta = 1 - 4.12 / 10
 
-        t = np.arange(step, thickness + 1, step)
-
         # compute cross sections in cm2 (see Langmore 1992)
-        cs_el = e_xsections.cse_elastic(energy, self.matrix_elements, self.matrix_stoic)
-        cs_inel = e_xsections.cse_inelastic(self.ineleloss, energy, self.matrix_elements, self.matrix_stoic)
+        cs_el = cse_elastic(energy, self.sample.elements, self.sample.stoic)
+        cs_inel = cse_inelastic(self.sample.eloss, energy, self.sample.elements, self.sample.stoic)
 
         # probability per thickness in um-1
-        # delta is the number density of molecules (cm-3)
-        delta = self.matrix_den / self.matrix_mw * Nav
+        delta = self.sample.density / self.sample.mw * Nav
         k_el = cs_el * delta * 1e-4
         k_inel = cs_inel * delta * 1e-4
         k_elin = cs_el * (1 - eta) * delta * 1e-4
@@ -55,7 +67,7 @@ class electron_beam(x_ray_beam):
         k_tot = k_inel + k_el
 
         # intensity fractions relative to primary beam
-        # t is converted to cm
+        t = output.t
         i_noscat = np.exp(-k_tot * t)
         i_1el = k_elin * t * i_noscat
         i_pc = np.sqrt(i_noscat * i_1el)
@@ -63,7 +75,7 @@ class electron_beam(x_ray_beam):
         i_out = 1 - np.exp(-k_out * t)
         i_inel = np.exp(-k_out * t) - np.exp(-(k_inel + k_out) * t)
 
-        res = result_holder(energy, thickness, step, t, i_noscat=i_noscat, i_1el=i_1el, i_pc=i_pc, i_elpl=i_elpl,
+        res = result_holder(e_beam, output, measurement, i_noscat=i_noscat, i_1el=i_1el, i_pc=i_pc, i_elpl=i_elpl,
                             i_out=i_out, i_inel=i_inel)
         self.results.append(res)
 
@@ -87,11 +99,10 @@ class electron_beam(x_ray_beam):
             axes = axes.flatten()
             ax = axes[i_fig]
             res = self.results[i_fig]
-            energy = res.energy
-            thickness = res.thickness
-            step = res.step
-            t = res.t
-            label_pos = int(thickness / step / 3)
+            energy = res.beam.energy
+            t = res.output.t
+            thickness = t[-1]
+            label_pos = int(t.size / 3)
 
             for i in res.categories:
                 ax.plot(t, i.data, linestyle=i.style, label=i.label, color=i.color)
@@ -110,14 +121,17 @@ class electron_beam(x_ray_beam):
             plt.show()
 
 
-unimatrix_e = electron_beam(pixel=1, wd=1e4, n_ccd=1024, matrix_compound='H48.6C32.9N8.9O8.9S0.6', matrix_density=1.35,
-                            ineleloss=37.5)
-
 energyls = [300, 1000]
 thickls = [2, 3]
 stepls = [5e-3, 5e-3]
 
-for energy, thickness, step in izip(energyls, thickls, stepls):
-    unimatrix_e.get_e_categories(energy, thickness, step)
+measurement = Measurement(pixel_size=1, n_ccd=1024, working_distance=1e4)
+simulator = ElectronSingleMatSimulator()
 
-unimatrix_e.plot_all()
+for energy, thickness, step in izip(energyls, thickls, stepls):
+    e_beam = ElectronBeam(energy)
+    sample = SingleMaterial(compound='H48.6C32.9N8.9O8.9S0.6', density=1.35, thickness=thickness, eloss=37.5)
+    output = Output(sample, step=step)
+    simulator.get_e_categories(e_beam, measurement, output, new_sample=sample)
+
+simulator.plot_all()

@@ -19,3 +19,16 @@ class Composite(object):
         self.feature_elements, self.feature_stoic, self.feature_mw = parser(self.feature)
         self.thickness = thickness
         self.t_f = feature_thickness
+
+
+class SingleMaterial(object):
+
+    def __init__(self, compound, density, thickness, eloss=None):
+
+        self.type = 'homogeneous'
+        self.compound = compound
+        self.density = density
+        if eloss is not None:
+            self.eloss = eloss
+        self.elements, self.stoic, self.mw = parser(self.compound)
+        self.thickness = thickness

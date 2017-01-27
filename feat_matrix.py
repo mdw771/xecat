@@ -1,3 +1,12 @@
+#####################################
+# Input units expected:             #
+# Thickness: um                     #
+# Energy keV                        #
+# Density: g/cm3                    #
+# Intermediate quantities may use   #
+# different unit systems.           #
+#####################################
+
 import sys
 import xraylib
 import numpy as np
