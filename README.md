@@ -1,1 +1,1 @@
-# xecat
+# Analytical Simulation of X-ray/Electron Beam Components for Thick Specimens
