@@ -1,3 +1,12 @@
+#####################################
+# Input units expected:             #
+# Thickness: um                     #
+# Energy keV                        #
+# Density: g/cm3                    #
+# Intermediate quantities may use   #
+# different unit systems.           #
+#####################################
+
 import sys
 from math import *
 from xraylib import AtomicWeight
@@ -17,8 +26,6 @@ import os
 
 class electron_beam(x_ray_beam):
 
-
-
     def get_xray_categories(self, energy, thickness, step):
 
         raise AttributeError('Invalid mathod for electron beam class.')
@@ -27,8 +34,8 @@ class electron_beam(x_ray_beam):
 
         print("-----------------------------------------------")
         print("Energy: %.2f keV" % energy)
-        print("Thickness limit: %.2f cm" % thickness)
-        print("Thickness resolution: %.2f um" % (step*1e4))
+        print("Thickness limit: %.2f um" % thickness)
+        print("Thickness resolution: %.2f um" % step)
 
         eta = 1 - 4.12 / 10
 
@@ -38,13 +45,13 @@ class electron_beam(x_ray_beam):
         cs_el = e_xsections.cse_elastic(energy, self.matrix_elements, self.matrix_stoic)
         cs_inel = e_xsections.cse_inelastic(self.ineleloss, energy, self.matrix_elements, self.matrix_stoic)
 
-        # probability per thickness in nm-1
+        # probability per thickness in um-1
         # delta is the number density of molecules (cm-3)
         delta = self.matrix_den / self.matrix_mw * Nav
-        k_el = cs_el * delta * 1e-7
-        k_inel = cs_inel * delta * 1e-7
-        k_elin = cs_el * (1 - eta) * delta * 1e-7
-        k_out = cs_el * eta * delta * 1e-7
+        k_el = cs_el * delta * 1e-4
+        k_inel = cs_inel * delta * 1e-4
+        k_elin = cs_el * (1 - eta) * delta * 1e-4
+        k_out = cs_el * eta * delta * 1e-4
         k_tot = k_inel + k_el
 
         # intensity fractions relative to primary beam
@@ -91,9 +98,9 @@ class electron_beam(x_ray_beam):
                 ax.text(t[label_pos], i.data[label_pos], i.label, fontsize=9, color=i.color)
 
             ax.set_yscale('log')
-            ax.set_ylim(1e-18, 1.1)
+            ax.set_ylim(1e-3, 1)
             ax.set_xlim(0, thickness)
-            ax.set_xlabel('Thickness (cm)')
+            ax.set_xlabel('Thickness ($\mu$m)')
             ax.set_ylabel('Fraction')
             ax.set_title('(%d) Protein at %d keV' % (i_fig, energy))
 
@@ -107,8 +114,8 @@ unimatrix_e = electron_beam(pixel=1, wd=1e4, n_ccd=1024, matrix_compound='H48.6C
                             ineleloss=37.5)
 
 energyls = [300, 1000]
-thickls = [int(2000), int(3000)]
-stepls = [5, 5]
+thickls = [2, 3]
+stepls = [5e-3, 5e-3]
 
 for energy, thickness, step in izip(energyls, thickls, stepls):
     unimatrix_e.get_e_categories(energy, thickness, step)

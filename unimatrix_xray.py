@@ -1,3 +1,12 @@
+#####################################
+# Input units expected:             #
+# Thickness: um                     #
+# Energy keV                        #
+# Density: g/cm3                    #
+# Intermediate quantities may use   #
+# different unit systems.           #
+#####################################
+
 import xraylib
 import matplotlib
 import matplotlib.pyplot as plt
@@ -51,8 +60,10 @@ class x_ray_beam(object):
         # frac1 is the fraction in forward scattered (detectable) photons that finally enter the aperture
         frac1 = inna_frac(wavelen, num_aperture)
 
-        # establish table of thickness in nm (must be integer)
+        # establish table of thickness in cm
         t = np.arange(step, thickness + 1, step)
+        t = t * 1e-4
+        thickness *= 1e-4
 
         # frac2 is the fraction of forward scattered inelastic scattered or plural scattered photons that enter the
         # aperture and contribute to PCI background
@@ -136,8 +147,8 @@ class x_ray_beam(object):
 unimatrix_xray = x_ray_beam(pixel=1, wd=1e4, n_ccd=1024, matrix_compound='H48.6C32.9N8.9O8.9S0.6', matrix_density=1.35)
 
 energyls = [5, 10, 20, 40]
-thickls = [1, 10, 50, 100]
-stepls = [1e-3, 2e-3, 4e-3, 8e-3]
+thickls = [1e4, 10e4, 50e4, 100e4]
+stepls = [10, 20, 40, 80]
 
 for energy, thickness, step in izip(energyls, thickls, stepls):
     unimatrix_xray.get_xray_categories(energy, thickness, step)

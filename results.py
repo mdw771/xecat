@@ -8,12 +8,13 @@ class dset(object):
 
 class result_holder(object):
 
-    def __init__(self, energy, thickness, step, t, i_noscat=None, i_1el=None, i_1elpc=None, i_pc=None, i_elpl=None,
-                 i_elplpc=None, i_out=None, i_pi=None, i_inel=None, i_inelpc=None):
-        self.energy = energy
-        self.thickness = thickness
-        self.step = step
-        self.t = t
+    def __init__(self, beam, output, measurement, constants=None, i_noscat=None, i_1el=None, i_1elpc=None, i_pc=None, i_elpl=None,
+                 i_elplpc=None, i_out=None, i_pi=None, i_inel=None, i_inelpc=None, i_innoinel=None, i_in=None,
+                 i_1elf_f=None):
+        self.beam = beam
+        self.measurement = measurement
+        self.output = output
+        self.constants = constants
         self.categories = []
         if i_noscat is not None:
             self.i_noscat = dset(i_noscat, 'Unscattered', 'salmon')
@@ -45,3 +46,12 @@ class result_holder(object):
         if i_inelpc is not None:
             self.i_inelpc = dset(i_inelpc, 'Inelastically scattered in PCI background', 'red', style='--')
             self.categories.append(self.i_inelpc)
+        if i_innoinel is not None:
+            self.i_innoinel = dset(i_innoinel, 'Scattered in without inelastic scattering', 'red')
+            self.categories.append(self.i_innoinel)
+        if i_in is not None:
+            self.i_in = dset(i_in, 'Scattered in', 'red')
+            self.categories.append(self.i_in)
+        if i_1elf_f is not None:
+            self.i_1elf_f = dset(i_1elf_f, 'Single elastic scattered by feature', 'red')
+            self.categories.append(self.i_1elf_f)

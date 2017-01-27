@@ -4,3 +4,4 @@ PlanckConst = 6.62607004e-34
 SpeedOfLight = 299792458.
 ECharge = 1.60217662e-19
 pi = 3.14159
+ElectronMass = 511.003414
