@@ -19,7 +19,6 @@ from sample import SingleMaterial
 from beam import *
 from output import *
 from measurement import *
-from itertools import izip
 import os
 
 
@@ -144,7 +143,7 @@ stepls = [10, 20, 40, 80]
 measurement = Measurement(pixel_size=1, n_ccd=1024, working_distance=1e4)
 simulator = XraySingleMatSimulator()
 
-for (energy, thickness, step) in izip(energyls, thickls, stepls):
+for (energy, thickness, step) in zip(energyls, thickls, stepls):
 
     sample = SingleMaterial(compound='H48.6C32.9N8.9O8.9S0.6', density=1.35, thickness=thickness)
     xray_beam = XrayBeam(energy)

@@ -4,13 +4,14 @@ from math import *
 from scipy.integrate import simps
 from scipy.integrate import quad
 from constants import *
+import sys
 
 
 def parser(compounds):
 
     comp = xraylib.CompoundParser(compounds)
     stoic_allowed = range(10)
-    stoic_allowed = map(str, stoic_allowed)
+    stoic_allowed = list(map(str, stoic_allowed))
     stoic_allowed.append('.')
     _compounds = list(compounds)
     elements = comp['Elements']
@@ -32,7 +33,7 @@ def parser(compounds):
                         break
                 temp = ''.join(temp)
                 stoic.append(float(temp))
-    mw = np.sum(np.asarray(stoic) * np.asarray(map(xraylib.AtomicWeight, elements)))
+    mw = np.sum(np.asarray(stoic) * np.asarray([xraylib.AtomicWeight(element) for element in elements]))
 
     return elements, stoic, mw
 
@@ -111,7 +112,7 @@ def inna_frac(wavelen, NA):
     s_glim = 1.3 / 4.1888
     s_na = 4 * pi * sin(NA / 2) / (wavelen * 1e9)
     if s_na > s_max:
-        print 'WARNING: Check NA.'
+        print('WARNING: Check NA.')
         sys.exit()
 
     full_guinier, err = quad(guinier, 0, s_glim)
