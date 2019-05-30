@@ -183,7 +183,7 @@ class CompositeSimulator():
             energy = i_xray.beam.energy
             plt.plot(t, dose_x, color='red')
             plt.text(t[labpt], dose_x[labpt], str(energy) + ' keV soft X-ray', fontsize=9, color='red')
-        plt.hold(True)
+        # plt.hold(True)
 
         t = self.doses_e[0][2].output.t
         labpt = int(t.size / 10 * 1.5)
@@ -193,7 +193,7 @@ class CompositeSimulator():
             plt.plot(t, dose_ef, color='black')
             plt.text(t[[labpt]], dose_ef[labpt], '(energy filter)', fontsize=9, color='black')
 
-        plt.hold(False)
+        # plt.hold(False)
         plt.axis([0.05, 200, 1e5, 1e12])
         plt.xlabel('Thickness ($\mu$m)')
         plt.ylabel('Dose (Gray)')

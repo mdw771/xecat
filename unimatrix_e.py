@@ -21,7 +21,6 @@ from measurement import *
 from output import *
 from sample import *
 from beam import *
-from itertools import izip
 import os
 
 
@@ -128,7 +127,7 @@ stepls = [5e-3, 5e-3]
 measurement = Measurement(pixel_size=1, n_ccd=1024, working_distance=1e4)
 simulator = ElectronSingleMatSimulator()
 
-for energy, thickness, step in izip(energyls, thickls, stepls):
+for energy, thickness, step in zip(energyls, thickls, stepls):
     e_beam = ElectronBeam(energy)
     sample = SingleMaterial(compound='H48.6C32.9N8.9O8.9S0.6', density=1.35, thickness=thickness, eloss=37.5)
     output = Output(sample, step=step)
