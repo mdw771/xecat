@@ -15,4 +15,4 @@ class Measurement(object):
     def get_numerical_aperture(self, beam):
 
         assert isinstance(beam, XrayBeam)
-        return (0.5 * beam.wavelength) / (self.pixel * 1e-6)
+        return (0.5 * beam.wavelength) / (self.pixel * 1.e-6)

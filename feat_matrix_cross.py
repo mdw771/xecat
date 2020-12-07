@@ -300,9 +300,14 @@ class CompositeSimulator():
         dose_x_zpc = nprobe_x_zpc * energy * ECharge * 1.e3 * k_pi_f * np.exp(-k_pi_b * t_b / 2) / (feature_den * t_f ** 2 * 1e-15)
         dose_x_abs = nprobe_x_abs * energy * ECharge * 1.e3 * k_pi_f * np.exp(-k_pi_b * t_b / 2) / (feature_den * t_f ** 2 * 1e-15)
 
-        print('i_abs_f', i_abs_f)
+        print('===== Complete model ======')
+        print('theta_x_zpc', theta_x_zpc)
         print('nprobe_x_zpc', nprobe_x_zpc)
         print('dose_x_zpc', dose_x_zpc)
+        print('theta_x_abs', theta_x_abs)
+        print('nprobe_x_abs', nprobe_x_abs)
+        print('dose_x_abs', dose_x_abs)
+        print('===========================')
 
         self.doses_x_thickness.append((dose_x_zpc, dose_x_abs, i_matrix, i_feature))
 
@@ -363,10 +368,6 @@ class CompositeSimulator():
         # calculate contrast parameters
         theta_e = np.abs(i_noscat_f - i_noscat_b + i_1el_f - i_1el_b) + 2 * np.sqrt(i_noscat_f * i_1elf_f)
         theta_e = theta_e / np.sqrt(i_in_f + i_in_b)
-        print('e theta')
-        print(theta_e)
-        print(i_noscat_f + i_1el_f)
-        print(i_noscat_b + i_1el_b)
         theta_ef = np.abs(i_noscat_f - i_noscat_b + i_1el_f - i_1el_b) + 2 * np.sqrt(i_noscat_f * i_1elf_f)
         theta_ef = theta_ef / np.sqrt(i_innoinel_f + i_innoinel_b)
         eloss_f = self.sample.feature_eloss
@@ -382,6 +383,11 @@ class CompositeSimulator():
         fluence_e = nprobe_e / pixel_area * 1e-6
         fluence_ef = nprobe_ef / pixel_area * 1e-6
         print('Electron fluence: {} (no filter); {} (filtered); in nm^-2'.format(fluence_e, fluence_ef))
+
+        print('n_e_filtered', nprobe_ef)
+        print('n_e_unfiltered', nprobe_e)
+        print('dose_e_filtered', dose_ef)
+        print('dopse_e_unfiltered', dose_e)
 
         # calculate dose wrt resolution
 
@@ -425,7 +431,7 @@ class CompositeSimulator():
 
     def get_xray_theta_complete(self, i_matrix, i_feature, i_ftf, i_btb, i_btf, contrast_mode='zpc', numerical=False):
 
-        (delta_f, _), (delta_b, _) = self.sample.get_ri_delta_beta(i_matrix.beam)
+        (delta_f, beta_f), (delta_b, beta_b) = self.sample.get_ri_delta_beta(i_matrix.beam)
         # (delta_f, _), (delta_b, _) = self.sample.get_ri_delta_beta_henke(i_matrix.beam)
         # mu_f, mu_b = 4 * np.pi * np.array([beta_f, beta_b]) / (i_matrix.beam.wavelength * 1e6)
         mu_b = i_matrix.constants['k_pi_b']
@@ -487,6 +493,8 @@ class CompositeSimulator():
             # i_f = i_f * (2 * np.exp(-mu_b * t_f) * fbtf  + np.exp(-mu_f * t_f) * fftf  +
             #              2 * (-1 + (eta_f - eta_b) * t_f) * np.exp(-(mu_f + mu_b) * t_f / 2) * np.sqrt(fbtf * fftf))
             # i_b = np.exp(-mu_b * t_b) * fbtb  * np.exp(-mu_b * t_f) * fbtf
+            print('delta_f, delta_b:', delta_f, delta_b)
+            print('beta_f, beta_b:', beta_f, beta_b)
             print('C_b(tb), C_b(tf), C_f(tf), ', fbtb, fbtf, fftf)
             i_f, i_b = unified_intensities(t_b, t_f, mu_b, mu_f, eta_b, eta_f, fbtb, fbtf, fftf, phi=np.pi/2, numerical=numerical)
             i_noise_f = i_f + i_inel_f + i_elpl_f
@@ -513,6 +521,8 @@ class CompositeSimulator():
     def get_xray_theta_simple(self, i_matrix, i_feature, contrast_mode='zpc'):
 
         (delta_f, _), (delta_b, _) = self.sample.get_ri_delta_beta(i_matrix.beam)
+
+
         # mu_f, mu_b = 4 * np.pi * np.array([beta_f, beta_b]) / (i_matrix.beam.wavelength * 1e6)
         mu_b = i_matrix.constants['k_pi_b']
         mu_f = i_feature.constants['k_pi_f']
@@ -540,6 +550,12 @@ class CompositeSimulator():
             i_f = i_f * (2 * np.exp(-mu_b * t_f) * fbtf ** 2 + np.exp(-mu_f * t_f) * fftf ** 2 +
                          2 * (-1 + (eta_f - eta_b) * t_f) * np.exp(-(mu_f + mu_b) * t_f / 2) * fbtf * fftf)
             i_b = np.exp(-mu_b * t_b) * fbtb ** 2 * np.exp(-mu_b * t_f) * fbtf ** 2
+            # i_f = np.exp(-mu_b * (t_b - t_f)) * (
+            #     2 * np.exp(-mu_b * t_f) + np.exp(-mu_f * t_f) +
+            #     2 * np.exp(-mu_f * t_f / 2 - mu_b * t_f / 2) * np.cos(eta_f * t_f - eta_b * t_f - np.pi / 2) -
+            #     2 * np.exp(-mu_f * t_f / 2 - mu_b * t_f / 2) * np.cos(eta_f * t_f - eta_b * t_f)
+            # )
+            # i_b = np.exp(-mu_b * (t_b - t_f)) * np.exp(-mu_b * t_f)
 
             theta = np.abs(i_f - i_b) / np.sqrt(i_f + i_b)
 
@@ -553,6 +569,30 @@ class CompositeSimulator():
             raise ValueError('Invalid contrast mode.')
 
         return theta
+
+    def get_xray_dose_simple(self, theta_x_zpc, theta_x_abs, i_feature, i_matrix):
+
+        # calculate dose wrt resolution
+        t_f = i_feature.output.t_f
+        delta_ls = t_f
+        t_b = i_matrix.output.t_b
+        wavelen = i_feature.beam.wavelength
+        pixel = i_feature.measurement.pixel
+        feature_den = self.sample.feature_den
+        energy = i_feature.beam.energy
+
+        # calculate contrast parameter
+        k_pi_f = i_feature.constants['k_pi_f']
+        k_pi_b = i_matrix.constants['k_pi_b']
+
+        nprobe_x_zpc = 25. / theta_x_zpc ** 2
+        nprobe_x_abs = 25. / theta_x_abs ** 2
+
+        dose_x_zpc = nprobe_x_zpc * energy * ECharge * 1.e3 * k_pi_f * np.exp(-k_pi_b * t_b / 2) / (feature_den * delta_ls ** 2 * 1e-15)
+        dose_x_abs = nprobe_x_abs * energy * ECharge * 1.e3 * k_pi_f * np.exp(-k_pi_b * t_b / 2) / (feature_den * delta_ls ** 2 * 1e-15)
+
+        return dose_x_zpc, dose_x_abs
+
 
     def get_xray_theta_thin(self, i_matrix, i_feature, contrast_mode='zpc'):
 
@@ -605,19 +645,32 @@ def unified_intensities(t_b, t_f, mu_b, mu_f, eta_b, eta_f, cbtb, cbtf, cftf, ph
 if __name__ == '__main__':
 
     sample = Composite(matrix_compound='H2O', matrix_density=0.92, feature_compound='H48.6C32.9N8.9O8.9S0.6',
-                       feature_density=1.35, matrix_eloss=39.3, feature_eloss=37.5, matrix_thickness=199.99,
+                       feature_density=1.35, matrix_eloss=39.3, feature_eloss=37.5, matrix_thickness=0,
                        feature_thickness=0.01, variable='t_b')
     measure = Measurement(pixel_size=0.01, n_ccd=1024, working_distance=1e4)
     simulator_thickness = CompositeSimulator(sample)
-    output_x = Output(sample, step=0.001)
-    output_e = Output(sample, step=0.001, overflow_limit=11)
+    output_x = Output(sample, step=0)
+    output_e = Output(sample, step=0)
 
     # xray with thickness
     for energy in [0.5, 10]:
         x_beam = XrayBeam(energy)
         i_matrix, i_feature, i_ftf, i_btb, i_btf = simulator_thickness.get_xray_categories(x_beam, measure, output_x,
                                                                                            return_aux=True)
+        # =================================
         simulator_thickness.get_xray_dose_thickness(i_matrix, i_feature, i_ftf, i_btb, i_btf)
+        # =================================
+        theta_x_rudolph_zpc = simulator_thickness.get_xray_theta_simple(i_matrix, i_feature, 'zpc')
+        theta_x_rudolph_abs = simulator_thickness.get_xray_theta_simple(i_matrix, i_feature, 'abs')
+        print('theta_x_rudolph_zpc', theta_x_rudolph_zpc)
+        print('theta_x_rudolph_abs', theta_x_rudolph_abs)
+        print('n_x_rudolph_zpc', 25. / theta_x_rudolph_zpc ** 2)
+        print('n_x_rudolph_abs', 25. / theta_x_rudolph_abs ** 2)
+        dose_x_rudolph_zpc, dose_x_rudolph_abs = simulator_thickness.get_xray_dose_simple(theta_x_rudolph_zpc, theta_x_rudolph_abs, i_feature, i_matrix)
+        print('dose_x_rudolph_zpc', dose_x_rudolph_zpc)
+        print('dose_x_rudolph_abs', dose_x_rudolph_abs)
+        # =================================
+
 
     # e- with thickness
     for energy in [100, 300]:
@@ -638,75 +691,5 @@ if __name__ == '__main__':
                                                                                  return_aux=True)
         simulator_resolution.get_xray_dose_resolution(i_matrix, i_feature, i_ftf, i_btb, i_btf)
 
-    # plot dose wrt thickness
 
-    fig = plt.figure(figsize=(6, 5))
-    matplotlib.rcParams['pdf.fonttype'] = 'truetype'
-    # fontProperties = {'family': 'serif', 'serif': ['Times New Roman'], 'weight': 'normal', 'size': 9}
-    # plt.rc('font', **fontProperties)
-    ax = fig.add_subplot(1, 1, 1)
-    ax.set_yscale('log')
-    ax.set_xscale('log')
-    ax.xaxis.set_major_formatter(plt.FormatStrFormatter('%g'))
-    ax.xaxis.set_major_locator(plt.FixedLocator([0.05, 0.1, 0.3, 1, 3, 10, 30, 100, 200]))
-
-    t = simulator_thickness.doses_x_thickness[0][2].output.t
-    labpt = int(t.size / 10 * 0.02)
-    for (dose_x_zpc, dose_x_abs, i_matrix, i_feature) in simulator_thickness.doses_x_thickness:
-        energy = i_matrix.beam.energy
-        plt.plot(t, dose_x_zpc, color='red')
-        plt.plot(t, dose_x_abs, color='blue')
-        hardness = 'soft' if energy < 5 else 'hard'
-        plt.text(t[labpt], dose_x_zpc[labpt], str(energy) + ' keV ' + hardness + ' X-ray (ZPC)', fontsize=9,
-                 color='red')
-        plt.text(t[labpt], dose_x_abs[labpt], str(energy) + ' keV ' + hardness + ' X-ray (Abs)', fontsize=9,
-                 color='blue')
-
-    t = simulator_thickness.doses_e[0][2].output.t
-    labpt = int(t.size / 10 * 1.5)
-    for (dose_e, dose_ef, i_matrix, i_feature) in simulator_thickness.doses_e:
-        energy = i_matrix.beam.energy
-        plt.plot(t, dose_e, color='gray')
-        plt.text(t[labpt], dose_e[labpt], '{:d} keV electron without energy filter)'.format(energy), fontsize=9,
-                 color='grey')
-        plt.plot(t, dose_ef, color='black')
-        plt.text(t[[labpt]], dose_ef[labpt], '{:d} keV electron with energy filter'.format(energy), fontsize=9,
-                 color='black')
-
-    # plt.hold(False)
-    plt.axis([0.05, 200, 1e3, 1e18])
-    plt.xlabel('Ice layer thickness ($\mu$m)')
-    plt.ylabel('Dose (Gray)')
-    # plt.title('(a) Dose versus ice layer thickness')
-    plt.savefig('dose_tf_10nm_bgthickness.pdf', format='pdf')
-
-    # plot dose wrt resolution
-
-    fig2 = plt.figure(figsize=(6, 5))
-    ax2 = fig.add_subplot(1, 1, 1)
-    ax2.set_yscale('log')
-    ax2.set_xscale('log')
-
-    for (dose_x_zpc_delta, dose_x_abs_delta, i_matrix, i_feature) in simulator_resolution.doses_x_resolution:
-        delta = i_matrix.output.t_f
-        labpt = int(delta.size / 10 * 1)
-        energy = i_matrix.beam.energy
-        color = 'blue' if energy == 0.5 else 'red'
-        comb = np.dstack([dose_x_zpc_delta, dose_x_abs_delta])
-        plt.loglog(delta * 1000, np.squeeze(np.min(comb, axis=-1)), color=color)
-        # plt.loglog(delta * 1000, dose_x_abs_delta, color='blue')
-        plt.text(delta[labpt] * 1000, dose_x_zpc_delta[labpt], str(energy) + ' keV soft X-ray (ZPC)', fontsize=9, color=color)
-        # plt.text(delta[labpt] * 1000, dose_x_abs_delta[labpt], str(energy) + ' keV soft X-ray (Abs)', fontsize=9,
-        #          color='blue')
-        #          color='blue')
-
-    plt.xlim([simulator_resolution.doses_x_resolution[0][2].output.t_f[0] * 1000,
-              simulator_resolution.doses_x_resolution[0][2].output.t_f[-1] * 1000])
-    plt.ylim([1e0, 1e12])
-
-    plt.xlabel('Resolution (nm)')
-    plt.ylabel('Dose (Gray)')
-    # plt.title('(b) Dose versus resolution')
-
-    # plt.show()
-    fig2.savefig('dose_tb_10um_resolution.pdf', type='pdf')
+    sys.exit()

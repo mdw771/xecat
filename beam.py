@@ -8,6 +8,7 @@ class XrayBeam(object):
     def __init__(self, energy):
 
         self.energy = energy
+        # wavelength in m
         self.wavelength = PlanckConst * SpeedOfLight / (energy * 1000 * ECharge)
 
 

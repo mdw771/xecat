@@ -91,7 +91,7 @@ class XraySingleMatSimulator(object):
         i_inel = np.exp(-(k_out + k_pi) * t) - np.exp(-(k_inelin + k_out + k_pi) * t)
         i_inelpc = i_inel * frac2
 
-        # res = result_holder(xray_beam, output, measurement, i_noscat=i_noscat, i_1el=i_1el, i_pc=i_pc,
+        # res = result_holder(xray_beam, output, measurement, i_noscat=i_noscat, i_1el=i_1el, i_1elpc=None, i_pc=i_pc,
         #                     i_elpl=i_elpl, i_elplpc=i_elplpc, i_out=i_out, i_pi=i_pi, i_inel=i_inel, i_inelpc=i_inelpc,
         #                     i_df=i_1elpc)
         res = result_holder(xray_beam, output, measurement, i_noscat=i_noscat, i_1el=i_1el,
@@ -144,16 +144,16 @@ energyls = [5, 15, 45]
 thickls = [0.1e4, 2e4, 10e4]
 stepls = [1, 1, 1]
 
-measurement = Measurement(pixel_size=0.02, n_ccd=1024, working_distance=1e4)
+measurement = Measurement(pixel_size=1, n_ccd=1024, working_distance=1e4)
 simulator = XraySingleMatSimulator()
 
 # EPON formula http://www.sigmaaldrich.com/catalog/product/aldrich/181196?lang=en&region=US
 for (energy, thickness, step) in izip(energyls, thickls, stepls):
 
-    sample = SingleMaterial(compound='C18H21O3Cl', density=1.20, thickness=thickness)
+    sample = SingleMaterial(compound='H2O', density=0.94, thickness=thickness)
     xray_beam = XrayBeam(energy)
     output = Output(sample, step=step)
     simulator.get_xray_categories(xray_beam, measurement, output, new_sample=sample)
 
-simulator.plot_all(show=True, dest_fname='unimatrix_fig_x_epon.pdf')
+simulator.plot_all(show=False, dest_fname='unimatrix_fig_x_ice.pdf')
 

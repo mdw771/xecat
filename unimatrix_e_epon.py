@@ -113,7 +113,7 @@ class ElectronSingleMatSimulator(object):
             ax.set_xlim(0, thickness)
             ax.set_xlabel('Thickness ($\mu$m)')
             ax.set_ylabel('Fraction')
-            ax.set_title('(%d) Ice at %d keV' % (i_fig+1, energy))
+            ax.set_title('(%d) EPON at %d keV' % (i_fig+1, energy))
             minorLocator = AutoMinorLocator()
             ax.xaxis.set_minor_locator(minorLocator)
 
@@ -133,8 +133,8 @@ simulator = ElectronSingleMatSimulator()
 for energy, thickness, step in izip(energyls, thickls, stepls):
     e_beam = ElectronBeam(energy)
     # sample = SingleMaterial(compound='H48.6C32.9N8.9O8.9S0.6', density=1.35, thickness=thickness, eloss=38.7)
-    sample = SingleMaterial(compound='H2O', density=0.94, thickness=thickness, eloss=39.3)
+    sample = SingleMaterial(compound='C18H21O3Cl', density=1.20, thickness=thickness, eloss=38.7)
     output = Output(sample, step=step)
     simulator.get_e_categories(e_beam, measurement, output, new_sample=sample)
 
-simulator.plot_all(dest_fname='unimatrix_fig_e_ice.pdf')
+simulator.plot_all(dest_fname='unimatrix_fig_e_epon.pdf')
